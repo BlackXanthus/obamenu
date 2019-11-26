@@ -246,52 +246,70 @@ def process_dtfile(dtf, catDict): #process this file & extract relevant info - N
         #debug_print("Testing...")
         myApplication = dtItem(dtf)
 
+        parse=True
+
         try:
-                if(myDesktopFile.get('Desktop Entry','Type') == "Application"):
-
-                    #debug_print("<DEBUG>: " + myDesktopFile.get('Desktop Entry','Name'))
-                    myApplication.addName(myDesktopFile.get('Desktop Entry','Name'))
-                    #debug_print("<DEBUG: " + myDesktopFile.get('Desktop Entry','Exec'))
-                    myApplication.addExec(myDesktopFile.get('Desktop Entry','Exec'))
-                    myApplication.addIcon(myDesktopFile.get('Desktop Entry','Icon'))
-                    myApplication.addType(myDesktopFile.get('Desktop Entry','Type'))
-
-                    categories = myDesktopFile.get('Desktop Entry','Categories')
-                    
-                    #As we're only working with true applications, we can store any that
-                    #are 'lost' here
-                    if len(categories) <= 0:
-                       categories = "Application"
-
-                    cats = []
-                    dtCats = categories.split(';')
-                    
-                    for cat in dtCats:
-                        process_category(cat,  cats)
-                        myApplication.addCategories(cats)
-
-                    try:
-                        myApplication.addComment(myDesktopFile.get('Desktop Entry','Comment'))
-                    except ConfigParser.NoOptionError:
-                        debug_print("<DEBUG> Desktop File without comment")
-                    try:
+                #If It's an application
+                if(myDesktopFile.has_option('Desktop Entry','NoDisplay')):
+                    if(myDesktopFile.get('Desktop Entry','NoDisplay').lower() == 'true'):
+                        parse=False
+                        debug_print("<DEBUG> Do not display"+myDesktopFile.get('Dekstop Entry','Name'))
+                #I doubt that anyone is using this option, but it's in the RFC
+                if(myDesktopFile.has_option('Desktop Entry','Hidden')):
+                    if(myDesktopFile.get('Desktop Entry','Hidden').lower() == 'true'):
+                        parse=False
+                if(parse==True):
+                    if(myDesktopFile.get('Desktop Entry','Type') == "Application"):
+                        #Not All desktop files are for adding to the menu
+                        #debug_print("<DEBUG>: " + myDesktopFile.get('Desktop Entry','Name'))
+                        myApplication.addName(myDesktopFile.get('Desktop Entry','Name'))
+                        #debug_print("<DEBUG: " + myDesktopFile.get('Desktop Entry','Exec'))
+                        myApplication.addExec(myDesktopFile.get('Desktop Entry','Exec'))
                         myApplication.addIcon(myDesktopFile.get('Desktop Entry','Icon'))
-                    except ConfigParser.NoOptionError:
-                        debug_print("<DEBUG> Desktop File without Terminal")
+                        myApplication.addType(myDesktopFile.get('Desktop Entry','Type'))
 
-                    active == True 
+                        categories = myDesktopFile.get('Desktop Entry','Categories')
+                    
+                        #As we're only working with true applications, we can store any that
+                        #are 'lost' here
+                        if len(categories) <= 0:
+                            categories = "Application"
 
-                    #store everything
-                for cat in myApplication.Categories:
-                    found=False
-                    for myApp in catDict[cat]:    
-                        if myApp.Name.lower().strip() == myApplication.Name.lower().strip():
-                         found=True
-                    if not found:
-                        catDict[cat].append(myApplication)
-                        #debug_print("<DEBUG> Adding: "+myApplication.Name)
-                    else:
-                       debug_print("<DEBUG>: Not Adding "+myApplication.Name)
+                        cats = []
+                        dtCats = categories.split(';')
+                    
+                        for cat in dtCats:
+                            process_category(cat,  cats)
+                            myApplication.addCategories(cats)
+
+                        try:
+                            myApplication.addComment(myDesktopFile.get('Desktop Entry','Comment'))
+                        except ConfigParser.NoOptionError:
+                            debug_print("<DEBUG> Desktop File without comment")
+                        try:
+                            myApplication.addIcon(myDesktopFile.get('Desktop Entry','Icon'))
+                        except ConfigParser.NoOptionError:
+                            debug_print("<DEBUG> Desktop File without Terminal")
+
+                        active == True 
+                        #for cat in myApplication.Categories:
+                        #    catDict[cat].append(myApplication)
+                        #store everything
+                        #REMOVED - I read the RFC
+                        
+                        found=False
+                        for cat in myApplication.Categories:
+                            catDict[cat].append(myApplication)
+                            #found=False
+                            #for myApp in catDict[cat]:    
+                            #    if myApp.Name.lower().strip() == myApplication.Name.lower().strip():
+                            #        found=True
+
+                            #if not found:
+                            #    catDict[cat].append(myApplication)
+                            #    debug_print("<DEBUG> Adding: "+myApplication.Name)
+                            #else:
+                            #    debug_print("<DEBUG>: Not Adding "+myApplication.Name)
 
 
 

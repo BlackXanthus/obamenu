@@ -1,0 +1,388 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+#
+# Original Version by: http://rmoe.anukis.de/obamenu.html
+#
+# Updated Version by: BlackXanthus @ Psy23
+# Source: https://github.com/BlackXanthus/obamenu
+#  
+#
+# Version 1.1.8  - Updated 2019
+# 
+#------Imports---
+
+#CAUTION: May not work in python3 
+import glob, ConfigParser,gtk, os.path
+from os import path
+
+#----Conf File Locations----
+theConfigFile = ConfigParser.ConfigParser()
+dict_DefaultConfig = dict()
+CONF_LOCATION=".config/openbox/"
+CONF_FILENAME="obamenu.ini"
+VERSION="1.1.8"
+categoryDict = {}
+# --- End of user config ---
+
+#--- Enable Debug printing
+DEBUG = False 
+
+class dtItem(object):
+    def __init__(self, fName):
+        self.fileName = fName
+        self.Name = ""
+        self.Comment = ""
+        self.Exec = ""
+        self.Terminal = None
+        self.Type = ""
+        self.Icon = ""
+        self.Categories = ()
+
+    def addName(self, data):
+        self.Name = xescape(data)
+
+    def addComment(self, data):
+        self.Comment = data
+
+    def addExec(self, data):
+        if len(data) > 3 and data[-2] == '%':	# get rid of filemanager arguments in dt files
+            data = data[:-2].strip()
+        self.Exec = data
+
+    def addIcon(self, data):
+        image_dir_base = get("image_dir_base")
+
+        self.Icon = ""
+
+        image_dir = image_dir_base + "/pixmaps/"
+
+        di = data.strip()
+        if not (len(di) < 3):
+          dix = di.find("/")      # is it a full path?
+          if dix >= 0 and dix <= 2:    # yes, its a path (./path or ../path or /path ...)
+            self.Icon = di
+          else:
+        #else a short name like "myapp"
+           tmp = image_dir + di + ".*"
+           tmp = glob.glob(tmp)
+           if len(tmp) > 0:
+            self.Icon = tmp[0]
+        #use default icon if one is not found
+        if(len(self.Icon) <= 0):
+          icon_name=di.lower()
+          #debug_print(icon_name)
+          #this could be more dynamic
+          icon_theme=gtk.icon_theme_get_default()
+          app_icon=icon_theme.lookup_icon(icon_name,48,0)
+          if app_icon:
+             self.Icon=app_icon.get_filename() 
+
+
+    def addTerminal(self, data):
+        if data == "True" or data == "true":
+            self.Terminal = True
+        else:
+            self.Terminal = False
+
+    def addType(self, data):
+        self.Type = data
+
+    def addCategories(self, data):
+        self.Categories = data
+
+def setupDefaultConfig():
+
+	dict_DefaultConfig["applications_dirs"]="/var/lib/flatpak/exports/share/applications,/usr/share/applications"
+	dict_DefaultConfig["image_dir_base"]= "/usr/share" # without "pixmaps" -/usr/local/share in FreeBSD, /usr/share on linux
+	dict_DefaultConfig["icon_Theme"]= "Humanity"
+	dict_DefaultConfig["image_cat_prefix"]="applications-"  # if empty will create no icon text only menu
+	dict_DefaultConfig["application_groups"]= "Office,Development,Graphics,Internet,Games,System,Multimedia,Utilities,Settings,Application"
+	dict_DefaultConfig["GroupAliases"]= "Audio:Multimedia,AudioVideo:Multimedia,Network:Internet,Game:Games, Utility:Utilities, GTK:,  GNOME:"
+	dict_DefaultConfig["ignore_list"]="evince-previewer,Ted,wingide3.2,python3.4,feh,xfce4-power-manager-settings" 
+	dict_DefaultConfig["terminal_string"] = "evte -e"         # your favourites terminal exec string
+	dict_DefaultConfig["simple_ob_header"]="False"  # print full xml style OB header
+
+def set(propKey,propValue):
+
+      propSection="Obamenu2"
+     
+      print("Adding:"+propKey+" "+propValue)
+
+
+      if(not theConfigFile.has_section(propSection)):
+        theConfigFile.add_section(propSection)
+        
+        #if(not self.config.has_option(propSection,propKey)):
+        #self.config.add_option(propSection,propKey)
+
+      try:
+         theConfigFile.set(propSection,propKey,propValue)
+      except:
+         debug_print("<DEBUG>"+propKey+" propValue"+propValue+" - could not be added")
+
+def get(propSection):
+
+    configValue=""
+    try:
+        configValue=theConfigFile.get("Obamenu2",propSection)
+    except:
+        configValue=dict_DefaultConfig[propSection]
+
+    return configValue
+
+def setup_configfile():
+
+	set("applications_dirs","/var/lib/flatpak/exports/share/applications, /usr/share/applications")
+	set("image_dir_base","/usr/share")# without "pixmaps" -/usr/local/share in FreeBSD, /usr/share on linux
+	set("icon_Theme", "Humanity")
+	set("image_cat_prefix", "applications-")# if empty will create no icon text only menu
+	set("application_groups" ,"Office,  Development,Graphics,Internet,Games,System,Multimedia,Utilities,Settings, Application")
+	set("group_aliases" , "Audio:Multimedia,AudioVideo:Multimedia,Network:Internet,Game:Games,Utility:Utilities,GTK:, GNOME:")
+	set("ignore_list", "evince-previewer, Ted, wingide3.2, python3.4, feh, xfce4-power-manager-settings")
+	set("terminal_string","evte -e")        # your favourites terminal exec string
+	set("simple_ob_header","False")  # print full xml style OB header
+
+def write_configfile():
+    setup_configfile()
+    config_location = userhome+"/"+CONF_LOCATION+CONF_FILENAME
+    try:
+        with open(config_location,'w') as configfile:
+            theConfigFile.write(configfile)
+        configfile.close()
+    except IOError as err:
+        print(err)
+    except OSError as err:
+        print(err)
+    except configparser.Error as err:
+        print(err)
+    except configparser.ParseError as err:
+        print(err)
+    except:
+        print(err)
+        print("Config Writing Fail")
+      
+def getCatIcon(cat):
+    image_dir_base = get("image_dir_base")
+    icon_Theme=get("icon_Theme")
+    iconDir = image_dir_base + "/icons/" + icon_Theme + "/categories/24/"
+    image_cat_prefix=get("image_cat_prefix")
+    cat = image_cat_prefix + cat.lower()
+    tmp = glob.glob(iconDir + cat + ".*")
+    if len(tmp) > 0:
+        return tmp[0]
+    else:
+        icon_name=cat.lower()
+        #debug_print(icon_name)
+        #this could be more dynamic
+        icon_theme=gtk.icon_theme_get_default()
+        icon=icon_theme.lookup_icon(icon_name,48,0)
+        if icon:
+           return icon.get_filename() 
+
+    return ""
+
+def getCatIcon_old(cat):
+    image_dir_base = get("image_dir_base")
+    icon_Theme=get(icon_Theme)
+    iconDir = image_dir_base + "/icons/" + icon_Theme + "/categories/24/"
+    image_cat_prefix = get("image_cat_prefix")
+    cat = image_cat_prefix + cat.lower()
+    tmp = glob.glob(iconDir + cat + ".*")
+    if len(tmp) > 0:
+        return tmp[0]
+    return ""
+
+def xescape(s):
+    Rep = {"&":"&amp;", "<":"&lt;", ">":"&gt;",  "'":"&apos;", "\"":"&quot;"}
+    for p in ("&", "<", ">",  "'","\""):
+        sl = len(s); last = -1
+        while last < sl:
+            i = s.find(p,  last+1)
+            if i < 0:
+                done = True
+                break
+            last = i
+            l = s[:i]
+            r = s[i+1:]
+            s = l + Rep[p] + r
+    return s
+
+def process_category(cat, curCats):
+
+	application_groups = get("application_groups")
+	appGroups = application_groups.split(",")
+
+	aliases=dict()
+	group_aliases=get("group_aliases")
+	group_aliases=group_aliases.split(",")
+
+	for i in group_aliases:
+		item = i.split(":")
+		aliases[item[0]]=item[1]	
+
+	# first process aliases
+	if aliases.has_key(cat):
+		if aliases[cat] == "":
+			return ""                               # ignore this one
+		cat = aliases[cat]
+	if cat in appGroups and cat not in curCats:  # valid categories only and no doublettes, please
+		curCats.append(cat)
+		return cat
+	if cat == "":
+			cat = "Application"
+
+	return cat 
+
+def debug_print(ErrorToPrint):
+        if(DEBUG):
+            print(ErrorToPrint)
+
+def process_dtfile(dtf, catDict): #process this file & extract relevant info - NEW
+        active = False
+
+        myDesktopFile = ConfigParser.ConfigParser()
+        myDesktopFile.readfp(open(dtf))
+
+        #debug_print("Testing...")
+        myApplication = dtItem(dtf)
+
+        try:
+                if(myDesktopFile.get('Desktop Entry','Type') == "Application"):
+
+                    #debug_print("<DEBUG>: " + myDesktopFile.get('Desktop Entry','Name'))
+                    myApplication.addName(myDesktopFile.get('Desktop Entry','Name'))
+                    #debug_print("<DEBUG: " + myDesktopFile.get('Desktop Entry','Exec'))
+                    myApplication.addExec(myDesktopFile.get('Desktop Entry','Exec'))
+                    myApplication.addIcon(myDesktopFile.get('Desktop Entry','Icon'))
+                    myApplication.addType(myDesktopFile.get('Desktop Entry','Type'))
+
+                    categories = myDesktopFile.get('Desktop Entry','Categories')
+                    
+                    #As we're only working with true applications, we can store any that
+                    #are 'lost' here
+                    if len(categories) <= 0:
+                       categories = "Application"
+
+                    cats = []
+                    dtCats = categories.split(';')
+                    
+                    for cat in dtCats:
+                        process_category(cat,  cats)
+                        myApplication.addCategories(cats)
+
+                    try:
+                        myApplication.addComment(myDesktopFile.get('Desktop Entry','Comment'))
+                    except ConfigParser.NoOptionError:
+                        debug_print("<DEBUG> Desktop File without comment")
+                    try:
+                        myApplication.addIcon(myDesktopFile.get('Desktop Entry','Icon'))
+                    except ConfigParser.NoOptionError:
+                        debug_print("<DEBUG> Desktop File without Terminal")
+
+                    active == True 
+
+                    #store everything
+                for cat in myApplication.Categories:
+                    found=False
+                    for myApp in catDict[cat]:    
+                        if myApp.Name.lower().strip() == myApplication.Name.lower().strip():
+                         found=True
+                    if not found:
+                        catDict[cat].append(myApplication)
+                        #debug_print("<DEBUG> Adding: "+myApplication.Name)
+                    else:
+                       debug_print("<DEBUG>: Not Adding "+myApplication.Name)
+
+
+
+        except(ConfigParser.NoOptionError):
+                active==False
+                debug_print("<DEBUG>: No Option Error. File Ignored")
+
+                
+        except (ConfigParser.NoSectionError):
+                active==False
+                debug_print("<DEBUG>: Not a valid Desktop File")
+
+
+#--------Main Program loop------------------
+
+if __name__ == "__main__":
+
+    setupDefaultConfig()
+
+    userhome = os.path.expanduser('~')
+    config_location = userhome+"/"+CONF_LOCATION+CONF_FILENAME
+    debug_print("Config Location:"+config_location)
+
+    if(path.exists(config_location)):
+        theConfigFile.readfp(open(config_location))
+    else:
+        write_configfile()
+
+#-------------Set Up variables. Mostly ---------
+    application_groups=get("application_groups")
+    application_groups=application_groups.split(",")
+    ignore_list=get("ignore_list")
+    ignore_list=ignore_list.split(",")
+    terminal_string=get("terminal_string")
+    simple_ob_header=get("simple_ob_header")
+
+    # init the application group dict (which will contain list of apps)
+    for appGroup in application_groups:
+        categoryDict[appGroup] = []
+
+    # now let's look  into the app dirs ...
+    applications_dirs = get("applications_dirs")
+    #we need to split the input into a list, to search the list
+    applications_dirs = applications_dirs.split(",")
+
+   
+    for appDir in applications_dirs:
+        
+        #Remove any spaces added by a user in the config file
+        appDir=appDir.strip()
+        appDir += "/*.desktop"
+        dtFiles = glob.glob(appDir)
+
+        # process each .desktop file in dir
+        for dtf in dtFiles:
+            skipFlag = False
+            for ifn in ignore_list:
+                if dtf.find(ifn) >= 0:
+                    skipFlag = True
+            if skipFlag == False:
+                process_dtfile(dtf,  categoryDict)
+
+    # now, generate jwm menu include
+    #simple_ob_header is now a string value
+    if simple_ob_header == "True":
+        print '<openbox_pipe_menu>'       # magic header
+    else:
+        print '<?xml version="1.0" encoding="UTF-8" ?><openbox_pipe_menu xmlns="http://openbox.org/"  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"  xsi:schemaLocation="http://openbox.org/" >'       # magic header
+        print("<separator label=\"Obamenu "+VERSION+"\" />")
+       # print("<separator label=\"Favourites\" />")
+       # print("<separator label=\"Dynamic Menu\" />")
+    appGroupLen = len(application_groups)
+    for ag in range(appGroupLen):
+        catList = categoryDict[application_groups[ag]]
+        if len(catList) < 1:
+            continue                # don't create empty menus
+        catStr = "<menu id=\"openbox-%s\" label=\"%s\" " % (application_groups[ag], application_groups[ag])
+        tmp = getCatIcon(application_groups[ag])
+        if tmp != "":
+            catStr += "icon=\"%s\"" % tmp
+        print catStr,  ">"
+        for app in catList:
+            progStr = "<item "
+            progStr += "label=\"%s\" "  % app.Name
+            if app.Icon != "":
+                progStr += "icon=\"%s\" " % app.Icon
+            progStr += "><action name=\"Execute\"><command><![CDATA["
+            if app.Terminal == True:
+                progStr += terminal_string + " "
+            progStr += "%s]]></command></action></item>"  % app.Exec
+            print progStr
+        print "</menu>"
+    print "</openbox_pipe_menu>"       # magic footer
+    pass # done/debug break

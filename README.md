@@ -1,4 +1,4 @@
-# obamenu
+# obamenu 1.1.8
 Obamenu 1.1.8
 
 Obamenu is the grandfather of creating menues on Openbox. 

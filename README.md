@@ -18,6 +18,7 @@ used to create menu items.
 
 This version is still under development, but the Master branch is stable and eminantly usable.
 
+# Installation
 **Installation:**
 
 1. Download the file 'obamenu', and unpack it somewhere. 

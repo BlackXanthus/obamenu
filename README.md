@@ -38,5 +38,5 @@ This version is still under development, but the Master branch is stable and emi
  
  NOTE: Openbox does cache dynamic menues(it does this behind the scenes), as such if you use the default obamenu, AND THEN use this menu, you may find that icons will be back missing. Wait a few moments, then try again.
 
-#History
+# History
 This repository originally existed here: https://github.com/BlackXanthus/obamenu-old, as a fork of another repository. After many changes, it was necessary to revert to the original obamenu code, and then re-apply the changes that had been made. As this was no-longer a fork, a new repository was created. 

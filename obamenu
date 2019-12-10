@@ -9,19 +9,23 @@
 #
 # Version 1.1.8  - Updated 2019
 # 
+# This version of Obamenu seeks to take note of the specifications 
+# found here : https://specifications.freedesktop.org/desktop-entry-spec/latest/index.html
 #------Imports---
 
 #CAUTION: May not work in python3 
-import glob, ConfigParser,gtk, os.path
+import glob, ConfigParser,gtk, os.path, time
 from os import path
+
 
 #----Conf File Locations----
 theConfigFile = ConfigParser.ConfigParser()
 dict_DefaultConfig = dict()
 CONF_LOCATION=".config/openbox/"
 CONF_FILENAME="obamenu.ini"
-VERSION="1.1.8"
+VERSION="1.1.9"
 categoryDict = {}
+start_time = time.time()
 # --- End of user config ---
 
 #--- Enable Debug printing
@@ -92,15 +96,16 @@ class dtItem(object):
 
 def setupDefaultConfig():
 
-	dict_DefaultConfig["applications_dirs"]="/var/lib/flatpak/exports/share/applications,/usr/share/applications"
-	dict_DefaultConfig["image_dir_base"]= "/usr/share" # without "pixmaps" -/usr/local/share in FreeBSD, /usr/share on linux
-	dict_DefaultConfig["icon_Theme"]= "Humanity"
-	dict_DefaultConfig["image_cat_prefix"]="applications-"  # if empty will create no icon text only menu
-	dict_DefaultConfig["application_groups"]= "Office,Development,Graphics,Internet,Games,System,Multimedia,Utilities,Settings,Application"
-	dict_DefaultConfig["GroupAliases"]= "Audio:Multimedia,AudioVideo:Multimedia,Network:Internet,Game:Games, Utility:Utilities, GTK:,  GNOME:"
-	dict_DefaultConfig["ignore_list"]="evince-previewer,Ted,wingide3.2,python3.4,feh,xfce4-power-manager-settings" 
-	dict_DefaultConfig["terminal_string"] = "evte -e"         # your favourites terminal exec string
-	dict_DefaultConfig["simple_ob_header"]="False"  # print full xml style OB header
+    dict_DefaultConfig["applications_dirs"]="/var/lib/flatpak/exports/share/applications,/usr/share/applications"
+    dict_DefaultConfig["image_dir_base"]= "/usr/share" # without "pixmaps" -/usr/local/share in FreeBSD, /usr/share on linux
+    dict_DefaultConfig["icon_Theme"]= "Humanity"
+    dict_DefaultConfig["image_cat_prefix"]="applications-"  # if empty will create no icon text only menu
+    dict_DefaultConfig["application_groups"]= "Office,Development,Graphics,Internet,Games,System,Multimedia,Utilities,Settings,Application"
+    dict_DefaultConfig["GroupAliases"]= "Audio:Multimedia,AudioVideo:Multimedia,Network:Internet,Game:Games, Utility:Utilities, GTK:,  GNOME:"
+    dict_DefaultConfig["ignore_list"]="evince-previewer,Ted,wingide3.2,python3.4,feh,xfce4-power-manager-settings" 
+    dict_DefaultConfig["terminal_string"] = "evte -e"         # your favourites terminal exec string
+    dict_DefaultConfig["simple_ob_header"]="False"  # print full xml style OB header
+    dict_DefaultConfig["Show_Loadtime"]="False"
 
 def set(propKey,propValue):
 
@@ -402,5 +407,10 @@ if __name__ == "__main__":
             progStr += "%s]]></command></action></item>"  % app.Exec
             print progStr
         print "</menu>"
+
+    now_time = time.time()
+    load_time = now_time - start_time
+    if(get("Show_Loadtime"))=="True":
+        print("<separator label=\"Load Time "+str(round(load_time,5))+"s\" />")
     print "</openbox_pipe_menu>"       # magic footer
     pass # done/debug break

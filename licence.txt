@@ -1,0 +1,5 @@
+Licence
+
+As this software is derrived from Obamenu 1.1.7, it retains elements of that licence, as follows:
+
+License: obamenu is under a dual license depending on who you are. If you are using it as a private person (which also means non-commercially) it's under a 3 clause BSD license. If you are using it as or in the context of anything not private, for instance, in a business or an agency, it's under GPL v.2.
